@@ -45,11 +45,29 @@ packages = [
 
 dependencies :: (Graph, Vertex -> (String, String, [String]), String -> Maybe Vertex)
 dependencies = Graph.graphFromEdges [
-        ("", "abcnotation", []),
+        ("", "reenact", []),
+
+        ("", "music-dynamics-literal", []),
         ("", "music-pitch-literal", []),
+
+        ("", "abcnotation", ["music-pitch-literal", "music-dynamics-literal"]),
+        ("", "musicxml2", ["music-pitch-literal", "music-dynamics-literal"]),
+        ("", "lilypond", ["music-pitch-literal", "music-dynamics-literal"]),
+
         ("", "music-pitch", ["music-pitch-literal"]),
-        ("", "music-score", ["music-pitch-literal"]),
-        ("", "music-preludes", ["music-pitch", "music-score"])
+        ("", "music-dynamics", ["music-dynamics-literal"]),
+        ("", "music-articulation", []),
+        ("", "music-parts", []),
+
+        ("", "music-score", ["music-pitch-literal", "music-dynamics-literal",
+            "abcnotation","lilypond","musicxml2"]),
+            
+        ("", "music-preludes", [
+            "music-pitch", "music-dynamics", "music-articulation", "music-parts",
+            "music-score"]),
+
+        ("", "music-sibelius", ["music-preludes"])
+
         ]
 (depGraph, getDepNode, getDepVertex) = dependencies
 fromJust (Just x) = x
@@ -91,7 +109,7 @@ main2 = do
 
 main3 args = do    
     if length args <= 0 then usage else do
-        if (args !! 0 == "doc") then doc args else return ()
+        if (args !! 0 == "document") then document args else return ()
         if (args !! 0 == "install") then install args else return ()
 
 usage :: Sh ()
@@ -100,7 +118,7 @@ usage = do
     echo $ ""
     echo $ "When commands is one of:"
     echo $ "   install name     Reinstall the given package and its dependencies"
-    echo $ "   doc              Generate and upload documentation"
+    echo $ "   document         Generate and upload documentation"
     echo $ "                        --reinstall-transf  Reinstall the transf package"
     echo $ "                        --no-api            Skip creating the API documentation"
     echo $ "                        --no-reference      Skip creating the reference documentation"
@@ -108,8 +126,8 @@ usage = do
     echo ""
     
 
-doc :: [String] -> Sh ()
-doc args = do
+document :: [String] -> Sh ()
+document args = do
     
     let flagReinstall   = "--reinstall-transf" `elem` args
     let flagNoApi       = "--no-api" `elem` args
