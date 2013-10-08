@@ -19,7 +19,9 @@ This command generates and uploads API and reference documentation to the Music 
 
     music document
 
+## Run a command in each source directory
 
+    music foreach git status
 
 ## Requirements
 

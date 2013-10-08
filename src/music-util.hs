@@ -13,6 +13,7 @@ import Control.Exception(SomeException, try)
 import Data.Text(Text)   
 import Data.String(IsString, fromString)
 import Data.Map (Map)
+import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.List as List
 import qualified Data.Text as T
@@ -70,15 +71,63 @@ dependencies = Graph.graphFromEdges [
 
         ]
 (depGraph, getDepNode, getDepVertex) = dependencies
-fromJust (Just x) = x
 
 getPackageDeps :: String -> [String]
 getPackageDeps name = let
-    vertex = fromJust $ getDepVertex name
+    vertex = fromMaybe (error $ "Unknown package: " ++ name) $ getDepVertex name
     (_,_,children) = getDepNode vertex
     in [name] ++ concatMap getPackageDeps children
 
--- TODO Move down
+
+main2 :: Sh ()
+main2 = do
+    args <- liftIO $ E.getArgs
+    path <- liftIO $ getEnvOr "MUSIC_SUITE_DIR" ""
+    if path == "" then error "Needs $MUSIC_SUITE_DIR to be set" else return ()
+
+    -- TODO check path
+    
+    -- echo $ fromString path
+    chdir (fromString path) (main3 args)
+
+main3 args = do    
+    if length args <= 0 then usage else do
+        if (args !! 0 == "document") then document args else return ()
+        if (args !! 0 == "install") then install args else return ()
+        if (args !! 0 == "list") then list args else return ()
+        if (args !! 0 == "foreach") then forEach (tail args) else return ()
+
+usage :: Sh ()
+usage = do
+    echo $ "usage: music <command> [<args>]"
+    echo $ ""
+    echo $ "When commands is one of:"
+    echo $ "   install name       Reinstall the given package and its dependencies"
+    echo $ "   foreach <command>  Run a command in each source directory"
+    echo $ "   document           Generate and upload documentation"
+    echo $ "                        --reinstall-transf  Reinstall the transf package"
+    echo $ "                        --no-api            Skip creating the API documentation"
+    echo $ "                        --no-reference      Skip creating the reference documentation"
+    echo $ "                        --local             Skip uploading"
+    echo $ "   list               List all packages in the Music Suite"
+    echo ""
+    
+
+list :: [String] -> Sh ()
+list _ = mapM_ (echo . fromString) packages
+
+forEach :: [String] -> Sh ()
+forEach cmdArgs = do
+    mapM_ (forEach' cmdArgs) packages
+    return ()
+                          
+forEach' :: [String] -> String -> Sh ()
+forEach' []         _    = error "foreach: empty command list"
+forEach' (cmd:args) name = do
+    -- TODO check dir exists, otherwise return and warn
+    chdir (fromString name) $ do
+        run_ (fromString cmd) (fmap fromString args)
+
 install :: [String] -> Sh ()
 install (_:name:_) = do
     let all = List.nub $ reverse $ getPackageDeps name
@@ -91,40 +140,6 @@ install (_:name:_) = do
 
     mapM reinstall all
     return ()
-    
-
-
-
-
-
-main2 :: Sh ()
-main2 = do
-    args <- liftIO $ E.getArgs
-    path <- liftIO $ getEnvOr "MUSIC_SUITE_DIR" "/usr/local/music"
-
-    -- TODO check path
-    
-    -- echo $ fromString path
-    chdir (fromString path) (main3 args)
-
-main3 args = do    
-    if length args <= 0 then usage else do
-        if (args !! 0 == "document") then document args else return ()
-        if (args !! 0 == "install") then install args else return ()
-
-usage :: Sh ()
-usage = do
-    echo $ "usage: music <command> [<args>]"
-    echo $ ""
-    echo $ "When commands is one of:"
-    echo $ "   install name     Reinstall the given package and its dependencies"
-    echo $ "   document         Generate and upload documentation"
-    echo $ "                        --reinstall-transf  Reinstall the transf package"
-    echo $ "                        --no-api            Skip creating the API documentation"
-    echo $ "                        --no-reference      Skip creating the reference documentation"
-    echo $ "                        --local             Skip uploading"
-    echo ""
-    
 
 document :: [String] -> Sh ()
 document args = do
