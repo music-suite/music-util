@@ -1,7 +1,7 @@
 
 # music-util
 
-A simple utility program `music` for working with the Music Suite <http://musicsuite.github.com>.
+A simple utility program `music` for working with the Music Suite <http://musicsuite.github.io>.
 
 Here are some of the things it can do:
 
