@@ -12,6 +12,8 @@ import Control.Applicative
 import Control.Exception(SomeException, try)
 import Data.Text(Text)   
 import Data.String(IsString, fromString)
+import Data.Map (Map)
+import qualified Data.Map as Map
 import qualified Data.List as List
 import qualified Data.Text as T
 import qualified Data.Graph as Graph
@@ -94,16 +96,15 @@ main3 args = do
 
 usage :: Sh ()
 usage = do
-    echo $ "usage: music-util <command> [<args>]"
+    echo $ "usage: music <command> [<args>]"
     echo $ ""
-    echo $ "The most commonly used git commands are:"
+    echo $ "When commands is one of:"
     echo $ "   install name     Reinstall the given package and its dependencies"
     echo $ "   doc              Generate and upload documentation"
-    echo $ "                        --reinstall-transf"
-    echo $ "                        --no-reinstall"
-    echo $ "                        --no-api"
-    echo $ "                        --no-ref"
-    echo $ "                        --local"
+    echo $ "                        --reinstall-transf  Reinstall the transf package"
+    echo $ "                        --no-api            Skip creating the API documentation"
+    echo $ "                        --no-reference      Skip creating the reference documentation"
+    echo $ "                        --local             Skip uploading"
     echo ""
     
 
@@ -111,12 +112,11 @@ doc :: [String] -> Sh ()
 doc args = do
     
     let flagReinstall   = "--reinstall-transf" `elem` args
-    let flagNoReinstall = "--no-reinstall" `elem` args
     let flagNoApi       = "--no-api" `elem` args
-    let flagNoRef       = "--no-ref" `elem` args
+    let flagNoRef       = "--no-reference" `elem` args
     let flagLocal       = "--local" `elem` args
     
-    if (flagReinstall && not flagNoReinstall)
+    if (flagReinstall)
         then do
             echo ""
             echo "======================================================================"
