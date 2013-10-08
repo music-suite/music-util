@@ -7,20 +7,75 @@
 
 import Shelly   
 import Data.Monoid
+import Data.Graph
 import Control.Applicative
 import Control.Exception(SomeException, try)
 import Data.Text(Text)   
 import Data.String(IsString, fromString)
 import qualified Data.List as List
 import qualified Data.Text as T
+import qualified Data.Graph as Graph
 import qualified System.Environment as E
 default (T.Text)
 main = shelly $ verbosely $ main2
+
 show' :: (Show a, IsString b) => a -> b
 show' = fromString . show
 
 getEnvOr :: String -> String -> IO String
 getEnvOr n def = fmap (either (const def) id) $ (try (E.getEnv n) :: IO (Either SomeException String))
+
+packages :: [String]
+packages = [
+        "abcnotation"               ,
+        "musicxml2"                 ,
+        "lilypond"                  ,
+        "music-pitch-literal"       ,
+        "music-dynamics-literal"    ,
+        "music-score"               ,
+        "music-pitch"               ,
+        "music-dynamics"            ,
+        "music-articulation"        ,
+        "music-parts"               ,
+        "music-preludes"            ,
+        "music-sibelius"
+        ]
+
+dependencies :: (Graph, Vertex -> (String, String, [String]), String -> Maybe Vertex)
+dependencies = Graph.graphFromEdges [
+        ("", "abcnotation", []),
+        ("", "music-pitch-literal", []),
+        ("", "music-pitch", ["music-pitch-literal"]),
+        ("", "music-score", ["music-pitch-literal"]),
+        ("", "music-preludes", ["music-pitch", "music-score"])
+        ]
+(depGraph, getDepNode, getDepVertex) = dependencies
+fromJust (Just x) = x
+
+getPackageDeps :: String -> [String]
+getPackageDeps name = let
+    vertex = fromJust $ getDepVertex name
+    (_,_,children) = getDepNode vertex
+    in [name] ++ concatMap getPackageDeps children
+
+-- TODO Move down
+install :: [String] -> Sh ()
+install (_:name:_) = do
+    let all = List.nub $ reverse $ getPackageDeps name
+    -- echo $ show' $ all
+
+    echo "======================================================================"
+    echo "Reinstalling the following packages:"
+    mapM (\x -> echo $ "        " <> fromString x) all
+    echo "======================================================================"
+
+    mapM reinstall all
+    return ()
+    
+
+
+
+
 
 main2 :: Sh ()
 main2 = do
@@ -52,10 +107,6 @@ usage = do
     echo ""
     
 
-install :: [String] -> Sh ()
-install [name] = do
-    return ()
-    
 doc :: [String] -> Sh ()
 doc args = do
     
@@ -106,6 +157,12 @@ reinstallTransf = do
     chdir "transf" $ do
         run_ "cabal" ["install"]
 
+reinstall :: String -> Sh ()
+reinstall name = do
+    -- TODO check dir exists, otherwise return and warn
+    chdir (fromString name) $ do
+        run_ "cabal" ["install", "--force-reinstalls"]
+
 
 suffM :: Monad m => [Char] -> Shelly.FilePath -> m Bool
 suffM s = (\p -> return $ List.isSuffixOf s (unFilePath p::String))
@@ -117,21 +174,7 @@ unFilePath = fromString . read . drop (length ("FilePath "::String)) . show
 makeApiDocs :: Sh ()
 makeApiDocs = do        
     
-    let packages = [
-            "abcnotation"               ,
-            "musicxml2"                 ,
-            "lilypond"                  ,
-            "music-pitch-literal"       ,
-            "music-dynamics-literal"    ,
-            "music-score"               ,
-            "music-pitch"               ,
-            "music-dynamics"            ,
-            "music-articulation"        ,
-            "music-parts"               ,
-            "music-preludes"            ,
-            "music-sibelius"
-            ]
-    let srcPaths = fmap (<> "src") packages
+    let srcPaths = fmap (<> "src") (fmap fromString packages)
     
     allHsFiles <- fmap concat $ mapM (findWhen (suffM ".hs")) srcPaths
     -- echo $ show' $ allHsFiles
