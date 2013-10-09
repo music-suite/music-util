@@ -227,8 +227,9 @@ makeRef = do
     -- TODO check dir exists, otherwise return and warn
     chdir "music-docs" $ do
         run_ "make" ["html"]
-    -- rm_rf "musicsuite.github.io/docs/ref" -- cp_r does not overwrite
-    cp_r "music-docs/build/" "musicsuite.github.io/docs/ref"
+
+    -- cp_r "music-docs/build/" "musicsuite.github.io/docs/ref"
+    run_ "cp" ["-r", "-f", "music-docs/build/", "musicsuite.github.io/docs/ref"]
 
 appendNL path = do
     c <- readfile path
