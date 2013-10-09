@@ -13,6 +13,9 @@ This command reinstalls a specific library *and its dependencies* from the local
 
 Withoug this utility, the developer would need to manually traverse and reinstall all dependencies whenever a low-level package is rebuilt. The dependency tree is hardcoded into the `music` program for now.
 
+> Note: This is *not* a replacement for `cabal install`, it works on the source level and
+needs cabal to operate properly.
+
 ## Generate documentation
 
 This command generates and uploads API and reference documentation to the Music Suite web site:
