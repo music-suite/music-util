@@ -34,3 +34,7 @@ This command generates and uploads API and reference documentation to the Music 
 
     cabal configure
     cabal install
+
+`music-util` assumes that all your local copies of the Music Suite repositories are in the same directory, and that this directory is the value of the environment variable `$MUSIC_SUITE_DIR`. You can se this in your `.profile` as follows:
+
+    export MUSIC_SUITE_DIR = /example/directory
