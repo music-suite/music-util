@@ -1,7 +1,7 @@
 
 # music-util
 
-A simple utility program `music` for working with the Music Suite <http://musicsuite.github.io>.
+A simple utility program `music-util` for working with the Music Suite <http://musicsuite.github.io>.
 
 Here are some of the things it can do:
 
@@ -9,9 +9,9 @@ Here are some of the things it can do:
 
 This command reinstalls a specific library *and its dependencies* from the local sources.
  
-    music install music-pitch
+    music-util install music-pitch
 
-Withoug this utility, the developer would need to manually traverse and reinstall all dependencies whenever a low-level package is rebuilt. The dependency tree is hardcoded into the `music` program for now.
+Withoug this utility, the developer would need to manually traverse and reinstall all dependencies whenever a low-level package is rebuilt. The dependency tree is hardcoded into the `music-util` program for now.
 
 > Note: This is *not* a replacement for `cabal install`, it works on the source level and
 needs cabal to operate properly.
@@ -20,11 +20,11 @@ needs cabal to operate properly.
 
 This command generates and uploads API and reference documentation to the Music Suite web site:
 
-    music document
+    music-util document
 
 ## Run a command in each source directory
 
-    music foreach git status
+    music-util foreach git status
 
 ## Requirements
 
