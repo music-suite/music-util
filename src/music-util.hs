@@ -125,6 +125,9 @@ forEach' :: [String] -> String -> Sh ()
 forEach' []         _    = error "foreach: empty command list"
 forEach' (cmd:args) name = do
     -- TODO check dir exists, otherwise return and warn
+    echo "======================================================================"
+    echo (fromString name)
+    echo "======================================================================"
     chdir (fromString name) $ do
         run_ (fromString cmd) (fmap fromString args)
 
