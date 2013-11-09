@@ -191,6 +191,7 @@ reinstallTransf :: Sh ()
 reinstallTransf = do
     -- TODO check dir exists, otherwise return and warn
     chdir "transf" $ do
+        run_ "cabal" ["clean"]
         run_ "cabal" ["configure"]
         run_ "cabal" ["install"]
 
