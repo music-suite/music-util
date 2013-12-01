@@ -237,11 +237,17 @@ getHsFiles2 = do
         condLibToModList (Just (PackageDescription.CondNode (PackageDescription.Library ms _ _) _ _)) = ms
 -}
 
--- TODO use something like 
---      export PDB="--package-db /Users/hans/.ghc/x86_64-darwin-7.6.3/package.conf.d" 
---      standalone-haddock -o musdocs/ $PDB abcnotation music-score music-pitch   
+{-
+TODO works but wrong w.r.t. hslinks
 
--- TODO bit of hack, we should really parse the cabal files
+makeApiDocs :: Sh ()
+makeApiDocs = do
+    home <- liftIO $ getEnvOr "HOME" ""
+    let pdb = home ++ "/.ghc/x86_64-darwin-7.6.3/package.conf.d"
+    run "standalone-haddock" $ ["-o", "musicsuite.github.io/docs/api", "--package-db", fromString pdb] ++ fmap fromString packages
+    return ()
+-}
+
 makeApiDocs :: Sh ()
 makeApiDocs = do        
     
