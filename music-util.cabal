@@ -23,7 +23,8 @@ executable "music-util"
         base            >= 4 && < 5,
         text,
         containers,
-        shelly
+        shelly,
+        Cabal           >= 1.16 && < 2
     hs-source-dirs:     src
     default-language:   Haskell2010
     main-is:

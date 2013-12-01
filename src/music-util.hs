@@ -1,6 +1,7 @@
 #!/usr/bin/env runhaskell
 
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE ExtendedDefaultRules #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
@@ -19,6 +20,10 @@ import qualified Data.List as List
 import qualified Data.Text as T
 import qualified Data.Graph as Graph
 import qualified System.Environment as E
+import qualified Distribution.PackageDescription as PackageDescription
+import Distribution.Verbosity (silent)
+import Distribution.PackageDescription.Parse (readPackageDescription)
+import qualified Distribution.ModuleName as ModuleName
 default (T.Text)
 main = shelly $ verbosely $ main2
 
@@ -205,18 +210,44 @@ reinstall name = do
 suffM :: Monad m => [Char] -> Shelly.FilePath -> m Bool
 suffM s = (\p -> return $ List.isSuffixOf s (unFilePath p::String))
 
+-- Real hack...
 unFilePath :: IsString a => Shelly.FilePath -> a
 unFilePath = fromString . read . drop (length ("FilePath "::String)) . show
+
+getHsFiles :: Sh [Shelly.FilePath]
+getHsFiles = do
+    let srcPaths = fmap (<> "src") (fmap fromString packages)
+    fmap concat $ mapM (findWhen (suffM ".hs")) srcPaths
+
+{-
+getHsFiles2 :: Sh [Shelly.FilePath]
+getHsFiles2 = do
+    let cabalFilePaths = fmap (\x -> x <> "/" <> x <> ".cabal") $ packages
+    cabalDefs <- liftIO $ mapM (readPackageDescription silent) cabalFilePaths
+    let cabalLibs = fmap (PackageDescription.condLibrary) $ cabalDefs
+    let cabalPublicMods = map (condLibToModList . PackageDescription.condLibrary) $ cabalDefs
+    let cabalPublicMods2 = zipWith (\package (fmap ModuleName.components -> mods) -> 
+            (\m -> (List.intercalate "/" $ [package, "src"] ++ m) ++ ".hs") `fmap` mods
+            ) packages cabalPublicMods
+    
+    echo $ show' cabalPublicMods2
+    return $ fmap fromString $ concat cabalPublicMods2
+    where
+        condLibToModList Nothing = []
+        condLibToModList (Just (PackageDescription.CondNode (PackageDescription.Library ms _ _) _ _)) = ms
+-}
+
+-- TODO use something like 
+--      export PDB="--package-db /Users/hans/.ghc/x86_64-darwin-7.6.3/package.conf.d" 
+--      standalone-haddock -o musdocs/ $PDB abcnotation music-score music-pitch   
 
 -- TODO bit of hack, we should really parse the cabal files
 makeApiDocs :: Sh ()
 makeApiDocs = do        
     
-    let srcPaths = fmap (<> "src") (fmap fromString packages)
+    hsFiles <- getHsFiles
+    liftIO $ mapM_ print $ hsFiles
     
-    allHsFiles <- fmap concat $ mapM (findWhen (suffM ".hs")) srcPaths
-    -- echo $ show' $ allHsFiles
-
     mkdir_p "musicsuite.github.io/docs/api/src"
     
     let opts  = ["-h"::Text, "--odir=musicsuite.github.io/docs/api"]
@@ -224,7 +255,7 @@ makeApiDocs = do
     let opts1 = []
     let opts2 = ["--title=The\xA0Music\xA0Suite"] -- Must use nbsp
 
-    run "haddock" (concat [opts, opts1, opts2, fmap unFilePath allHsFiles])
+    run "haddock" (concat [opts, opts1, opts2, fmap unFilePath hsFiles])
     return ()    
 
 makeRef :: Sh ()
