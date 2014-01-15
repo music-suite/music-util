@@ -46,6 +46,7 @@ packages = [
         "music-articulation"        ,
         "music-parts"               ,
         "music-preludes"            ,
+        "music-graphics"            ,
         "music-sibelius"
         ]
 
@@ -72,6 +73,7 @@ dependencies = Graph.graphFromEdges [
             "music-pitch", "music-dynamics", "music-articulation", "music-parts",
             "music-score"]),
 
+        ("", "music-graphics", ["music-preludes"]),
         ("", "music-sibelius", ["music-preludes"])
 
         ]
