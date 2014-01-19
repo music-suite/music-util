@@ -206,7 +206,10 @@ reinstall :: String -> Sh ()
 reinstall name = do
     -- TODO check dir exists, otherwise return and warn
     chdir (fromString name) $ do
-        run_ "cabal" ["install", "--force-reinstalls"]
+        run_ "cabal" ["install", 
+          "--force-reinstalls", 
+          "--disable-documentation" -- speeds things up considerably
+          ]
 
 
 suffM :: Monad m => [Char] -> Shelly.FilePath -> m Bool
