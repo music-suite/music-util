@@ -75,16 +75,15 @@ dependencies = Graph.graphFromEdges [
 
         ("", "music-graphics", ["music-preludes"]),
         ("", "music-sibelius", ["music-preludes"])
-
-        ]
-(depGraph, getDepNode, getDepVertex) = dependencies
+    ]
 
 getPackageDeps :: String -> [String]
-getPackageDeps name = let
-    vertex = fromMaybe (error $ "Unknown package: " ++ name) $ getDepVertex name
-    (_,_,children) = getDepNode vertex
-    in [name] ++ concatMap getPackageDeps children
-
+getPackageDeps name = [name] ++ concatMap getPackageDeps children
+    where
+        (depGraph, getDepNode, getDepVertex) = dependencies
+        vertex = fromMaybe (error $ "Unknown package: " ++ name) $ getDepVertex name
+        (_,_,children) = getDepNode vertex
+        
 
 main2 :: Sh ()
 main2 = do
