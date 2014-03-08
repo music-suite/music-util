@@ -3,8 +3,14 @@
 
 import           Control.Applicative
 import           Control.Exception                     (SomeException, try)
-import           Data.Graph
-import qualified Data.Graph                            as Graph
+-- import           Data.Graph
+-- import qualified Data.Graph                            as OG
+
+import Data.Graph.Inductive hiding (run, run_)
+import Data.GraphViz
+import Data.GraphViz.Attributes.Complete
+
+import System.Process (system)
 import qualified Data.List                             as List
 import           Data.Map                              (Map)
 import qualified Data.Map                              as Map
@@ -13,6 +19,7 @@ import           Data.Monoid
 import           Data.String                           (IsString, fromString)
 import           Data.Text                             (Text)
 import qualified Data.Text                             as T
+import qualified Data.Text.Lazy                        as TL
 import qualified Distribution.ModuleName               as ModuleName
 import qualified Distribution.PackageDescription       as PackageDescription
 import           Distribution.PackageDescription.Parse (readPackageDescription)
@@ -29,55 +36,153 @@ getEnvOr :: String -> String -> IO String
 getEnvOr n def = fmap (either (const def) id) $ (try (E.getEnv n) :: IO (Either SomeException String))
 
 packages :: [String]
-packages = [
-        "abcnotation"               ,
-        "musicxml2"                 ,
-        "lilypond"                  ,
-        "music-pitch-literal"       ,
-        "music-dynamics-literal"    ,
-        "music-score"               ,
-        "music-pitch"               ,
-        "music-dynamics"            ,
-        "music-articulation"        ,
-        "music-parts"               ,
-        "music-preludes"            ,
-        "music-graphics"            ,
-        "music-sibelius"
-        ]
+packages = catMaybes . fmap (lab dependencies) . nodes $ dependencies
 
-dependencies :: (Graph, Vertex -> (String, String, [String]), String -> Maybe Vertex)
-dependencies = Graph.graphFromEdges [
-        ("", "reenact", []),
+-- packages = [
+--         "abcnotation"               ,
+--         "musicxml2"                 ,
+--         "lilypond"                  ,
+--         "music-pitch-literal"       ,
+--         "music-dynamics-literal"    ,
+--         "music-score"               ,
+--         "music-pitch"               ,
+--         "music-dynamics"            ,
+--         "music-articulation"        ,
+--         "music-parts"               ,
+--         "music-preludes"            ,
+--         "music-graphics"            ,
+--         "music-sibelius"
+--         ]
 
-        ("", "music-dynamics-literal", []),
-        ("", "music-pitch-literal", []),
 
-        ("", "abcnotation", ["music-pitch-literal", "music-dynamics-literal"]),
-        ("", "musicxml2", ["music-pitch-literal", "music-dynamics-literal"]),
-        ("", "lilypond", ["music-pitch-literal", "music-dynamics-literal"]),
+-- dependencies2 :: (OG.Graph, OG.Vertex -> (String, String, [String]), String -> Maybe OG.Vertex)
+-- dependencies2 = OG.graphFromEdges [
+--         ("", "reenact", []),
+-- 
+--         ("", "music-dynamics-literal", []),
+--         ("", "music-pitch-literal", []),
+-- 
+--         ("", "abcnotation", ["music-pitch-literal", "music-dynamics-literal"]),
+--         ("", "musicxml2", ["music-pitch-literal", "music-dynamics-literal"]),
+--         ("", "lilypond", ["music-pitch-literal", "music-dynamics-literal"]),
+-- 
+--         ("", "music-pitch", ["music-pitch-literal"]),
+--         ("", "music-dynamics", ["music-dynamics-literal"]),
+--         ("", "music-articulation", []),
+--         ("", "music-parts", []),
+-- 
+--         ("", "music-score", ["music-pitch-literal", "music-dynamics-literal",
+--             "abcnotation","lilypond","musicxml2"]),
+-- 
+--         ("", "music-preludes", [
+--             "music-pitch", "music-dynamics", "music-articulation", "music-parts",
+--             "music-score"]),
+-- 
+--         ("", "music-graphics", ["music-preludes"]),
+--         ("", "music-sibelius", ["music-preludes"])
+--     ]
+-- 
+-- getPackageDeps2 :: String -> [String]
+-- getPackageDeps2 name = [name] ++ concatMap getPackageDeps2 children
+--     where
+--         (depGraph, getDepNode, getDepVertex) = dependencies2
+--         vertex = fromMaybe (error $ "Unknown package: " ++ name) $ getDepVertex name
+--         (_,_,children) = getDepNode vertex       
 
-        ("", "music-pitch", ["music-pitch-literal"]),
-        ("", "music-dynamics", ["music-dynamics-literal"]),
-        ("", "music-articulation", []),
-        ("", "music-parts", []),
 
-        ("", "music-score", ["music-pitch-literal", "music-dynamics-literal",
-            "abcnotation","lilypond","musicxml2"]),
+-- Get node from label
+fromLab :: Eq a => Graph gr => a -> gr a b -> Maybe Node
+fromLab l' = getFirst . ufold (\(_,n,l,_) -> if l == l' then (<> First (Just n)) else id) mempty
 
-        ("", "music-preludes", [
-            "music-pitch", "music-dynamics", "music-articulation", "music-parts",
-            "music-score"]),
+dependencies :: Gr String String
+dependencies = mkGraph
+    [
+        (0,  "abcnotation")               ,
+        (1,  "musicxml2")                 ,
+        (2,  "lilypond")                  ,
+        (3,  "music-pitch-literal")       ,
+        (4,  "music-dynamics-literal")    ,
+        (5,  "music-score")               ,
+        (6,  "music-pitch")               ,
+        (7,  "music-dynamics")            ,
+        (8,  "music-articulation")        ,
+        (9,  "music-parts")               ,
+        (10, "music-preludes")            ,
+        (11, "music-graphics")            ,
+        (12, "music-sibelius")
+    ]
+    [
+        (0, 3, ""),
+        (0, 4, ""),
+        (1, 3, ""),
+        (1, 4, ""),
+        (2, 3, ""),
+        (2, 4, ""),
+        (6, 3, ""),
+        (7, 4, ""),
 
-        ("", "music-graphics", ["music-preludes"]),
-        ("", "music-sibelius", ["music-preludes"])
+        (5, 0, ""),
+        (5, 1, ""),
+        (5, 2, ""),
+        (5, 3, ""),
+        (5, 4, ""),
+
+        (10, 5, ""),
+        (10, 6, ""),
+        (10, 7, ""),
+        (10, 8, ""),
+        (10, 9, ""),
+
+        (11, 10, ""),
+        (12, 10, "") 
     ]
 
-getPackageDeps :: String -> [String]
-getPackageDeps name = [name] ++ concatMap getPackageDeps children
+
+dependencyParams :: GraphvizParams Int String String () String
+dependencyParams = nonClusteredParams {
+     globalAttributes = ga,
+     fmtNode = fn,
+     fmtEdge = fe
+ }
+ where
+     ga = [
+         GraphAttrs [],
+         NodeAttrs []
+         ]
+
+     fn (n,l) = [(Label . StrLabel . TL.pack) l]
+     fe (f,t,l) = [(Label . StrLabel . TL.pack) l]        
+
+showDependencyGraph :: Sh ()
+showDependencyGraph = do
+    writefile "/tmp/deps.dot" (TL.toStrict $ printDotGraph dg)
+    liftIO $ system "dot -Tpdf /tmp/deps.dot > music-suite-deps.pdf"
+    liftIO $ system "open music-suite-deps.pdf"
+    return ()
     where
-        (depGraph, getDepNode, getDepVertex) = dependencies
-        vertex = fromMaybe (error $ "Unknown package: " ++ name) $ getDepVertex name
-        (_,_,children) = getDepNode vertex
+        dg = graphToDot dependencyParams dependencies
+
+
+getPackageDeps :: String -> [String]
+getPackageDeps l = List.nub $ l : concatMap getPackageDeps children
+    where
+        children = getPackageDeps1 l
+
+getPackageDeps1 :: String -> [String]
+getPackageDeps1 label = depNames -- TODO recur
+    where
+        -- node id of given package
+        node :: Node
+        node = fromMaybe (error "Unknown package") $ fromLab label dependencies
+        
+        -- node ids of direct deps
+        deps :: [Node]
+        deps = suc dependencies node
+
+        depNames :: [String]
+        depNames = catMaybes $ fmap (lab dependencies) deps 
+
+
 
 
 main2 :: Sh ()
@@ -96,6 +201,7 @@ main3 args = do
         if (args !! 0 == "document") then document args else return ()
         if (args !! 0 == "install") then install args else return ()
         if (args !! 0 == "list") then list args else return ()
+        if (args !! 0 == "graph") then graph args else return ()
         if (args !! 0 == "foreach") then forEach (tail args) else return ()
 
 usage :: Sh ()
@@ -110,12 +216,15 @@ usage = do
     echo $ "                        --no-api            Skip creating the API documentation"
     echo $ "                        --no-reference      Skip creating the reference documentation"
     echo $ "                        --local             Skip uploading"
-    echo $ "   list               List all packages in the Music Suite"
+    echo $ "   list               Show a list all packages in the Music Suite"
+    echo $ "   graph              Show a graph all packages in the Music Suite (requires Graphviz)"
     echo ""
 
 
 list :: [String] -> Sh ()
 list _ = mapM_ (echo . fromString) packages
+
+graph _ = showDependencyGraph
 
 forEach :: [String] -> Sh ()
 forEach cmdArgs = do
