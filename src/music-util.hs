@@ -36,11 +36,7 @@ getEnvOr :: String -> String -> IO String
 getEnvOr n def = fmap (either (const def) id) $ (try (E.getEnv n) :: IO (Either SomeException String))
 
 packages :: [String]
-packages = catMaybes . fmap (lab dependencies) . nodes $ dependencies
-
--- Get node from label
-fromLab :: Eq a => Graph gr => a -> gr a b -> Maybe Node
-fromLab l' = getFirst . ufold (\(_,n,l,_) -> if l == l' then (<> First (Just n)) else id) mempty
+packages = labels dependencies
 
 dependencies :: Gr String String
 dependencies = mkGraph
@@ -344,3 +340,15 @@ upload = do
         run "git" ["commit", "-m", "Documentation"]
         run "git" ["push"]
     return ()
+
+
+-- TODO move to fgl
+-- | Get all labels
+labels :: Graph gr => gr a b -> [a]
+labels gr = catMaybes . fmap (lab gr) . nodes $ gr
+
+-- | Get node from label
+fromLab :: Eq a => Graph gr => a -> gr a b -> Maybe Node
+fromLab l' = getFirst . ufold (\(_,n,l,_) -> if l == l' then (<> First (Just n)) else id) mempty
+
+
