@@ -38,58 +38,6 @@ getEnvOr n def = fmap (either (const def) id) $ (try (E.getEnv n) :: IO (Either 
 packages :: [String]
 packages = catMaybes . fmap (lab dependencies) . nodes $ dependencies
 
--- packages = [
---         "abcnotation"               ,
---         "musicxml2"                 ,
---         "lilypond"                  ,
---         "music-pitch-literal"       ,
---         "music-dynamics-literal"    ,
---         "music-score"               ,
---         "music-pitch"               ,
---         "music-dynamics"            ,
---         "music-articulation"        ,
---         "music-parts"               ,
---         "music-preludes"            ,
---         "music-graphics"            ,
---         "music-sibelius"
---         ]
-
-
--- dependencies2 :: (OG.Graph, OG.Vertex -> (String, String, [String]), String -> Maybe OG.Vertex)
--- dependencies2 = OG.graphFromEdges [
---         ("", "reenact", []),
--- 
---         ("", "music-dynamics-literal", []),
---         ("", "music-pitch-literal", []),
--- 
---         ("", "abcnotation", ["music-pitch-literal", "music-dynamics-literal"]),
---         ("", "musicxml2", ["music-pitch-literal", "music-dynamics-literal"]),
---         ("", "lilypond", ["music-pitch-literal", "music-dynamics-literal"]),
--- 
---         ("", "music-pitch", ["music-pitch-literal"]),
---         ("", "music-dynamics", ["music-dynamics-literal"]),
---         ("", "music-articulation", []),
---         ("", "music-parts", []),
--- 
---         ("", "music-score", ["music-pitch-literal", "music-dynamics-literal",
---             "abcnotation","lilypond","musicxml2"]),
--- 
---         ("", "music-preludes", [
---             "music-pitch", "music-dynamics", "music-articulation", "music-parts",
---             "music-score"]),
--- 
---         ("", "music-graphics", ["music-preludes"]),
---         ("", "music-sibelius", ["music-preludes"])
---     ]
--- 
--- getPackageDeps2 :: String -> [String]
--- getPackageDeps2 name = [name] ++ concatMap getPackageDeps2 children
---     where
---         (depGraph, getDepNode, getDepVertex) = dependencies2
---         vertex = fromMaybe (error $ "Unknown package: " ++ name) $ getDepVertex name
---         (_,_,children) = getDepNode vertex       
-
-
 -- Get node from label
 fromLab :: Eq a => Graph gr => a -> gr a b -> Maybe Node
 fromLab l' = getFirst . ufold (\(_,n,l,_) -> if l == l' then (<> First (Just n)) else id) mempty
@@ -161,7 +109,6 @@ showDependencyGraph = do
     return ()
     where
         dg = graphToDot dependencyParams dependencies
-
 
 getPackageDeps :: String -> [String]
 getPackageDeps l = List.nub $ l : concatMap getPackageDeps children
