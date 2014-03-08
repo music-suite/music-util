@@ -1,8 +1,5 @@
-#!/usr/bin/env runhaskell
 
-{-# LANGUAGE ExtendedDefaultRules #-}
 {-# LANGUAGE OverloadedStrings    #-}
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 
 import           Control.Applicative
 import           Control.Exception                     (SomeException, try)
