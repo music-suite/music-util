@@ -1,29 +1,27 @@
 #!/usr/bin/env runhaskell
 
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE ExtendedDefaultRules #-}
+{-# LANGUAGE OverloadedStrings    #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 
-import Shelly   
-import Data.Monoid
-import Data.Graph
-import Control.Applicative
-import Control.Exception(SomeException, try)
-import Data.Text(Text)   
-import Data.String(IsString, fromString)
-import Data.Map (Map)
-import Data.Maybe
-import qualified Data.Map as Map
-import qualified Data.List as List
-import qualified Data.Text as T
-import qualified Data.Graph as Graph
-import qualified System.Environment as E
-import qualified Distribution.PackageDescription as PackageDescription
-import Distribution.Verbosity (silent)
-import Distribution.PackageDescription.Parse (readPackageDescription)
-import qualified Distribution.ModuleName as ModuleName
+import           Control.Applicative
+import           Control.Exception                     (SomeException, try)
+import           Data.Graph
+import qualified Data.Graph                            as Graph
+import qualified Data.List                             as List
+import           Data.Map                              (Map)
+import qualified Data.Map                              as Map
+import           Data.Maybe
+import           Data.Monoid
+import           Data.String                           (IsString, fromString)
+import           Data.Text                             (Text)
+import qualified Data.Text                             as T
+import qualified Distribution.ModuleName               as ModuleName
+import qualified Distribution.PackageDescription       as PackageDescription
+import           Distribution.PackageDescription.Parse (readPackageDescription)
+import           Distribution.Verbosity                (silent)
+import           Shelly
+import qualified System.Environment                    as E
 default (T.Text)
 main = shelly $ verbosely $ main2
 
@@ -68,7 +66,7 @@ dependencies = Graph.graphFromEdges [
 
         ("", "music-score", ["music-pitch-literal", "music-dynamics-literal",
             "abcnotation","lilypond","musicxml2"]),
-            
+
         ("", "music-preludes", [
             "music-pitch", "music-dynamics", "music-articulation", "music-parts",
             "music-score"]),
@@ -83,7 +81,7 @@ getPackageDeps name = [name] ++ concatMap getPackageDeps children
         (depGraph, getDepNode, getDepVertex) = dependencies
         vertex = fromMaybe (error $ "Unknown package: " ++ name) $ getDepVertex name
         (_,_,children) = getDepNode vertex
-        
+
 
 main2 :: Sh ()
 main2 = do
@@ -92,11 +90,11 @@ main2 = do
     if path == "" then error "Needs $MUSIC_SUITE_DIR to be set" else return ()
 
     -- TODO check path
-    
+
     -- echo $ fromString path
     chdir (fromString path) (main3 args)
 
-main3 args = do    
+main3 args = do
     if length args <= 0 then usage else do
         if (args !! 0 == "document") then document args else return ()
         if (args !! 0 == "install") then install args else return ()
@@ -117,7 +115,7 @@ usage = do
     echo $ "                        --local             Skip uploading"
     echo $ "   list               List all packages in the Music Suite"
     echo ""
-    
+
 
 list :: [String] -> Sh ()
 list _ = mapM_ (echo . fromString) packages
@@ -126,7 +124,7 @@ forEach :: [String] -> Sh ()
 forEach cmdArgs = do
     mapM_ (forEach' cmdArgs) packages
     return ()
-                          
+
 forEach' :: [String] -> String -> Sh ()
 forEach' []         _    = error "foreach: empty command list"
 forEach' (cmd:args) name = do
@@ -152,12 +150,12 @@ install (_:name:_) = do
 
 document :: [String] -> Sh ()
 document args = do
-    
+
     let flagReinstall   = "--reinstall-transf" `elem` args
     let flagNoApi       = "--no-api" `elem` args
     let flagNoRef       = "--no-reference" `elem` args
     let flagLocal       = "--local" `elem` args
-    
+
     if (flagReinstall)
         then do
             echo ""
@@ -183,7 +181,7 @@ document args = do
             makeRef
         else return ()
     if (not flagLocal)
-        then do 
+        then do
             echo ""
             echo "======================================================================"
             echo "Uploading documentation"
@@ -205,8 +203,8 @@ reinstall :: String -> Sh ()
 reinstall name = do
     -- TODO check dir exists, otherwise return and warn
     chdir (fromString name) $ do
-        run_ "cabal" ["install", 
-          "--force-reinstalls", 
+        run_ "cabal" ["install",
+          "--force-reinstalls",
           "--disable-documentation" -- speeds things up considerably
           ]
 
@@ -230,10 +228,10 @@ getHsFiles2 = do
     cabalDefs <- liftIO $ mapM (readPackageDescription silent) cabalFilePaths
     let cabalLibs = fmap (PackageDescription.condLibrary) $ cabalDefs
     let cabalPublicMods = map (condLibToModList . PackageDescription.condLibrary) $ cabalDefs
-    let cabalPublicMods2 = zipWith (\package (fmap ModuleName.components -> mods) -> 
+    let cabalPublicMods2 = zipWith (\package (fmap ModuleName.components -> mods) ->
             (\m -> (List.intercalate "/" $ [package, "src"] ++ m) ++ ".hs") `fmap` mods
             ) packages cabalPublicMods
-    
+
     echo $ show' cabalPublicMods2
     return $ fmap fromString $ concat cabalPublicMods2
     where
@@ -253,20 +251,20 @@ makeApiDocs = do
 -}
 
 makeApiDocs :: Sh ()
-makeApiDocs = do        
-    
+makeApiDocs = do
+
     hsFiles <- getHsFiles
     liftIO $ mapM_ print $ hsFiles
-    
+
     mkdir_p "musicsuite.github.io/docs/api/src"
-    
+
     let opts  = ["-h"::Text, "--odir=musicsuite.github.io/docs/api"]
     -- let opts1 = "--source-module=src/%{MODULE/./-}.html --source-entity=src/%{MODULE/./-}.html#%{NAME}"
     let opts1 = []
     let opts2 = ["--title=The\xA0Music\xA0Suite"] -- Must use nbsp
 
     run "haddock" (concat [opts, opts1, opts2, fmap unFilePath hsFiles])
-    return ()    
+    return ()
 
 makeRef :: Sh ()
 makeRef = do
@@ -284,12 +282,12 @@ appendNL path = do
 upload :: Sh ()
 upload = do
     chdir "musicsuite.github.io" $ do
-        
+
         -- Hack: Append a newline to a file so that git commands never fail
         appendNL "docs/ref/index.html"
-        
+
         run "git" ["add", "docs/api"]
         run "git" ["add", "docs/ref"]
         run "git" ["commit", "-m", "Documentation"]
-        run "git" ["push"]        
+        run "git" ["push"]
     return ()
