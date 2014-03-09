@@ -108,7 +108,7 @@ showDependencyGraph = do
         dg = graphToDot dependencyParams dependencies
 
 getPackageDeps :: String -> [String]
-getPackageDeps l = List.nub $ l : concatMap getPackageDeps children
+getPackageDeps l = l : concatMap getPackageDeps children
     where
         children = getPackageDeps1 l
 
