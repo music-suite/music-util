@@ -53,7 +53,8 @@ dependencies = mkGraph
         (9,  "music-parts")               ,
         (10, "music-preludes")            ,
         (11, "music-graphics")            ,
-        (12, "music-sibelius")
+        (12, "music-sibelius")            ,
+        (99, "music-docs")
     ]
     [
         (0, 3, ""),
@@ -146,23 +147,44 @@ main3 args = do
         if (args !! 0 == "list") then list args else return ()
         if (args !! 0 == "graph") then graph args else return ()
         if (args !! 0 == "foreach") then forEach (tail args) else return ()
+        if (args !! 0 == "setup") then setup args else return ()
 
 usage :: Sh ()
 usage = do
     echo $ "usage: music <command> [<args>]"
     echo $ ""
     echo $ "When commands is one of:"
-    echo $ "   install name       Reinstall the given package and its dependencies"
+    echo $ "   list               Show a list all packages in the Music Suite"
+    echo $ "   graph              Show a graph all packages in the Music Suite (requires Graphviz)"
+    echo $ "   setup              Download all packages (but do not build)"
+    echo $ "   install <package>  Reinstall the given package and its dependencies"
     echo $ "   foreach <command>  Run a command in each source directory"
     echo $ "   document           Generate and upload documentation"
     echo $ "                        --reinstall-transf  Reinstall the transf package"
     echo $ "                        --no-api            Skip creating the API documentation"
     echo $ "                        --no-reference      Skip creating the reference documentation"
     echo $ "                        --local             Skip uploading"
-    echo $ "   list               Show a list all packages in the Music Suite"
-    echo $ "   graph              Show a graph all packages in the Music Suite (requires Graphviz)"
     echo ""
 
+setup :: [String] -> Sh ()
+setup _ = do
+    path <- pwd
+    echo $ "Ready to setup music-suite in path\n    " <> unFilePath path
+    echo $ ""
+    echo $ "Please enter 'ok' to confirm..."
+    conf <- liftIO $ getLine
+    when (conf /= "ok") $ echo $ "Aborted"
+    when (conf == "ok") $ do
+        mapM_ clonePackage packages
+        return ()
+    return ()
+
+clonePackage :: String -> Sh ()
+clonePackage name = do
+    echo "======================================================================"
+    liftIO $ system $ "git clone git@github.com:music-suite/" <> name <> ".git"
+    echo "======================================================================"
+    return ()
 
 list :: [String] -> Sh ()
 list _ = mapM_ (echo . fromString) packages
@@ -179,7 +201,7 @@ forEach' []         _    = error "foreach: empty command list"
 forEach' (cmd:args) name = do
     -- TODO check dir exists, otherwise return and warn
     echo "======================================================================"
-    echo (fromString name)
+    echo $ fromString name
     echo "======================================================================"
     chdir (fromString name) $ do
         run_ (fromString cmd) (fmap fromString args)
