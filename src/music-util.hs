@@ -1,5 +1,5 @@
 
-{-# LANGUAGE OverloadedStrings, CPP #-}
+{-# LANGUAGE OverloadedStrings, ViewPatterns, CPP #-}
 
 import           Control.Applicative
 import           Control.Exception                     (SomeException, try)
@@ -217,7 +217,9 @@ forEach' (cmd:args) name = do
     echo $ fromString name
     echo "======================================================================"
     chdir (fromString name) $ do
-        run_ (fromString cmd) (fmap fromString args)
+        run_ (fromString $ substName $ cmd) (fmap (fromString . substName) args)
+    where
+        substName = rep "MUSIC_PACKAGE" name
 
 install :: [String] -> Sh ()
 install (_:name:_) = do
@@ -387,3 +389,8 @@ fromLab :: Eq a => Graph gr => a -> gr a b -> Maybe Node
 fromLab l' = getFirst . ufold (\(_,n,l,_) -> if l == l' then (<> First (Just n)) else id) mempty
 
 
+rep :: Eq a => [a] -> [a] -> [a] -> [a]
+rep a b s@(x:xs) = if List.isPrefixOf a s
+                     then b++rep a b (drop (length a) s)
+                     else x:rep a b xs
+rep _ _ [] = []
