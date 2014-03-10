@@ -158,7 +158,7 @@ main3 args = do
 
 usage :: Sh ()
 usage = do
-    echo $ "usage: music <command> [<args>]"
+    echo $ "usage: music-util <command> [<args>]"
     echo $ ""
     echo $ "When commands is one of:"
     echo $ "   list               Show a list all packages in the Music Suite"
