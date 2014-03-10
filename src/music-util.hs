@@ -1,5 +1,5 @@
 
-{-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE OverloadedStrings, CPP #-}
 
 import           Control.Applicative
 import           Control.Exception                     (SomeException, try)
@@ -7,8 +7,11 @@ import           Control.Exception                     (SomeException, try)
 -- import qualified Data.Graph                            as OG
 
 import Data.Graph.Inductive hiding (run, run_)
+
+#ifdef HAS_GRAPHVIZ
 import Data.GraphViz
 import Data.GraphViz.Attributes.Complete
+#endif
 
 import System.Process (system)
 import qualified Data.List                             as List
@@ -83,6 +86,8 @@ dependencies = mkGraph
     ]
 
 
+#ifdef HAS_GRAPHVIZ
+
 dependencyParams :: GraphvizParams Int String String () String
 dependencyParams = nonClusteredParams {
      globalAttributes = ga,
@@ -106,6 +111,8 @@ showDependencyGraph = do
     return ()
     where
         dg = graphToDot dependencyParams dependencies
+
+#endif
 
 getPackageDeps :: String -> [String]
 getPackageDeps l = l : concatMap getPackageDeps children
@@ -189,7 +196,13 @@ clonePackage name = do
 list :: [String] -> Sh ()
 list _ = mapM_ (echo . fromString) packages
 
-graph _ = showDependencyGraph
+graph :: [String] -> Sh ()
+graph _ = do
+#ifdef HAS_GRAPHVIZ
+    showDependencyGraph
+#else
+    fail "music-util compiled without Graphviz support"
+#endif
 
 forEach :: [String] -> Sh ()
 forEach cmdArgs = do

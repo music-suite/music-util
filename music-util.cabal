@@ -25,7 +25,10 @@ executable "music-util"
         containers,
         shelly,
         process,
-        graphviz,
+
+        -- If enabled, add HAS_GRAPHVIZ flag
+        -- graphviz,
+        
         fgl,
         Cabal           >= 1.16 && < 2
     hs-source-dirs:     src
