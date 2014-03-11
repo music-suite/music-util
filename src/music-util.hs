@@ -14,6 +14,7 @@ import Data.GraphViz.Attributes.Complete
 #endif
 
 import System.Process (system)
+import Control.Monad
 import qualified Data.List                             as List
 import           Data.Map                              (Map)
 import qualified Data.Map                              as Map
@@ -180,11 +181,35 @@ setup _ = do
     echo $ ""
     echo $ "Please enter 'ok' to confirm..."
     conf <- liftIO $ getLine
-    when (conf /= "ok") $ echo $ "Aborted"
-    when (conf == "ok") $ do
-        mapM_ clonePackage packages
+    if conf /= "ok" then 
+        echo "Aborted" 
+    else do
+        forM_ packages clonePackage
+        hasCabalSandboxes >>= (`when` setupSandbox)
         return ()
     return ()
+
+setupSandbox :: Sh ()
+setupSandbox = do
+    mkdir "music-sandbox"
+    chdir "music-sandbox" $ do
+        run "cabal" ["sandbox", "init", "--sandbox", "."]
+        forM_ packages $ \p -> do
+            run "cabal" ["sandbox", "add-source", "../" <> T.pack p]
+
+    -- Tell cabal to use the sandbox in all music-suite packages.
+    -- This is typically only needed for top-level packages such as music-preludes, but no
+    -- harm in doing it in all packages.
+    forM_ packages $ \p -> chdir (fromString p) $ do
+        run "cabal" ["sandbox", "init", "--sandbox", "../music-sandbox"]
+
+    return ()
+
+hasCabalSandboxes :: Sh Bool
+hasCabalSandboxes = do
+    cb <- run (fromString "cabal") [fromString "--version"]
+    return $ List.isInfixOf "1.18" . head . lines. T.unpack $ cb
+
 
 clonePackage :: String -> Sh ()
 clonePackage name = do
@@ -233,6 +258,7 @@ install (_:name:_) = do
 
     mapM reinstall all
     return ()
+
 
 document :: [String] -> Sh ()
 document args = do
