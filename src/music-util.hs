@@ -132,7 +132,7 @@ getPackageDeps1 label = depNames -- TODO recur
         deps = suc dependencies node
 
         depNames :: [String]
-        depNames = catMaybes $ fmap (lab dependencies) deps 
+        depNames = catMaybes $ fmap (lab dependencies) deps 
 
 
 
@@ -186,8 +186,8 @@ setupClone cont = do
     path <- pwd
     echo $ "Ready to setup music-suite in path\n    " <> unFilePath path
     echo $ ""
-    echo $ "Please enter 'ok' to confirm..."
-    conf <- liftIO $ getLine
+    echo $ "Please enter 'ok' to confirm..."
+    conf <- liftIO $ getLine
     if conf /= "ok" then 
         echo "Aborted" 
     else do
@@ -218,13 +218,13 @@ setupSandbox' = do
 hasCabalSandboxes :: Sh Bool
 hasCabalSandboxes = do
     cb <- run (fromString "cabal") [fromString "--version"]
-    return $ List.isInfixOf "1.18" . head . lines. T.unpack $ cb
+    return $ List.isInfixOf "1.18" . head . lines. T.unpack $ cb
 
 
 clonePackage :: String -> Sh ()
 clonePackage name = do
     echo "======================================================================"
-    liftIO $ system $ "git clone git@github.com:music-suite/" <> name <> ".git"
+    liftIO $ system $ "git clone git@github.com:music-suite/" <> name <> ".git"
     echo "======================================================================"
     return ()
 
@@ -252,7 +252,7 @@ forEach' (cmd:args) name = do
     echo $ fromString name
     echo "======================================================================"
     chdir (fromString name) $ do
-        run_ (fromString $ substName $ cmd) (fmap (fromString . substName) args)
+        run_ (fromString $ substName $ cmd) (fmap (fromString . substName) args)
     where
         substName = rep "MUSIC_PACKAGE" name
 
