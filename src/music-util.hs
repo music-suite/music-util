@@ -148,14 +148,14 @@ main2 = do
     -- echo $ fromString path
     chdir (fromString path) (main3 args)
 
-main3 args = do
-    if length args <= 0 then usage else do
-        if (args !! 0 == "document") then document args else return ()
-        if (args !! 0 == "install") then install args else return ()
-        if (args !! 0 == "list") then list args else return ()
-        if (args !! 0 == "graph") then graph args else return ()
-        if (args !! 0 == "foreach") then forEach (tail args) else return ()
-        if (args !! 0 == "setup") then setup args else return ()
+main3 (subCmd : args) = do
+    if length (subCmd : args) <= 0 then usage else do
+        if (subCmd == "document")   then document args else return ()
+        if (subCmd == "install")    then install args else return ()
+        if (subCmd == "list")       then list args else return ()
+        if (subCmd == "graph")      then graph args else return ()
+        if (subCmd == "foreach")    then forEach args else return ()
+        if (subCmd == "setup")      then setup args else return ()
 
 usage :: Sh ()
 usage = do
@@ -164,7 +164,9 @@ usage = do
     echo $ "When commands is one of:"
     echo $ "   list               Show a list all packages in the Music Suite"
     echo $ "   graph              Show a graph all packages in the Music Suite (requires Graphviz)"
-    echo $ "   setup              Download all packages (but do not build)"
+    echo $ "   setup              Download all packages and setup sandbox"
+    echo $ "   setup clone        Download all packages"
+    echo $ "   setup sandbox      Setup the sandbox"
     echo $ "   install <package>  Reinstall the given package and its dependencies"
     echo $ "   foreach <command>  Run a command in each source directory"
     echo $ "   document           Generate and upload documentation"
@@ -175,7 +177,11 @@ usage = do
     echo ""
 
 setup :: [String] -> Sh ()
-setup _ = do
+setup ("clone":_)   = setupClone (return ())
+setup ("sandbox":_) = setupSandbox
+setup _             = setupClone setupSandbox
+
+setupClone cont = do
     path <- pwd
     echo $ "Ready to setup music-suite in path\n    " <> unFilePath path
     echo $ ""
@@ -185,12 +191,15 @@ setup _ = do
         echo "Aborted" 
     else do
         forM_ packages clonePackage
-        hasCabalSandboxes >>= (`when` setupSandbox)
+        cont
         return ()
     return ()
 
 setupSandbox :: Sh ()
-setupSandbox = do
+setupSandbox = hasCabalSandboxes >>= (`when` setupSandbox')
+
+setupSandbox' = do
+    rm_rf "music-sandbox"
     mkdir "music-sandbox"
     chdir "music-sandbox" $ do
         run "cabal" ["sandbox", "init", "--sandbox", "."]
@@ -247,7 +256,7 @@ forEach' (cmd:args) name = do
         substName = rep "MUSIC_PACKAGE" name
 
 install :: [String] -> Sh ()
-install (_:name:_) = do
+install (name:_) = do
     let all = List.nub $ reverse $ getPackageDeps name
     -- echo $ show' $ all
 
