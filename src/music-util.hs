@@ -210,7 +210,7 @@ setupSandbox' = do
     -- Tell cabal to use the sandbox in all music-suite packages.
     -- This is typically only needed for top-level packages such as music-preludes, but no
     -- harm in doing it in all packages.
-    forM_ (packages `sans` "music-util") $ \p -> chdir (fromString p) $ do
+    forM_ (packages `sans` "music-util" `sans` "music-docs") $ \p -> chdir (fromString p) $ do
         run "cabal" ["sandbox", "init", "--sandbox", "../music-sandbox"]
         run "cabal" ["install", "--only-dependencies"]
         run "cabal" ["configure"]
