@@ -1,2 +1,6 @@
 dist
 .shelly
+.hackette
+*.pdf
+*.ly
+*.pdf

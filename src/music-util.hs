@@ -45,11 +45,11 @@ packages = labels dependencies
 dependencies :: Gr String String
 dependencies = mkGraph
     [
+        (-3,  "music-pitch-literal")       ,
+        (-4,  "music-dynamics-literal")    ,
         (0,  "abcnotation")               ,
         (1,  "musicxml2")                 ,
         (2,  "lilypond")                  ,
-        (3,  "music-pitch-literal")       ,
-        (4,  "music-dynamics-literal")    ,
         (5,  "music-score")               ,
         (6,  "music-pitch")               ,
         (7,  "music-dynamics")            ,
@@ -61,20 +61,20 @@ dependencies = mkGraph
         (99, "music-docs")
     ]
     [
-        (0, 3, ""),
-        (0, 4, ""),
-        (1, 3, ""),
-        (1, 4, ""),
-        (2, 3, ""),
-        (2, 4, ""),
-        (6, 3, ""),
-        (7, 4, ""),
+        (0, -3, ""),
+        (0, -4, ""),
+        (1, -3, ""),
+        (1, -4, ""),
+        (2, -3, ""),
+        (2, -4, ""),
+        (6, -3, ""),
+        (7, -4, ""),
 
         (5, 0, ""),
         (5, 1, ""),
         (5, 2, ""),
-        (5, 3, ""),
-        (5, 4, ""),
+        (5, -3, ""),
+        (5, -4, ""),
 
         (10, 5, ""),
         (10, 6, ""),
@@ -210,8 +210,11 @@ setupSandbox' = do
     -- Tell cabal to use the sandbox in all music-suite packages.
     -- This is typically only needed for top-level packages such as music-preludes, but no
     -- harm in doing it in all packages.
-    forM_ packages $ \p -> chdir (fromString p) $ do
+    forM_ (packages `sans` "music-util") $ \p -> chdir (fromString p) $ do
         run "cabal" ["sandbox", "init", "--sandbox", "../music-sandbox"]
+        run "cabal" ["install", "--only-dependencies"]
+        run "cabal" ["configure"]
+        run "cabal" ["install"]
 
     return ()
 
@@ -430,3 +433,5 @@ rep a b s@(x:xs) = if List.isPrefixOf a s
                      then b++rep a b (drop (length a) s)
                      else x:rep a b xs
 rep _ _ [] = []
+
+xs `sans` x = filter (/= x) xs
