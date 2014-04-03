@@ -148,6 +148,7 @@ main2 = do
     -- echo $ fromString path
     chdir (fromString path) (main3 args)
 
+main3 []              = usage
 main3 (subCmd : args) = do
     if length (subCmd : args) <= 0 then usage else do
         if (subCmd == "document")   then document args else return ()
