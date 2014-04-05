@@ -154,13 +154,14 @@ main2 = do
 main3 []              = usage
 main3 (subCmd : args) = do
     if length (subCmd : args) <= 0 then usage else do
-        if (subCmd == "document")   then document args else return ()
-        if (subCmd == "install")    then install args else return ()
-        if (subCmd == "list")       then list args else return ()
-        if (subCmd == "graph")      then graph args else return ()
-        if (subCmd == "foreach")    then forEach args else return ()
-        if (subCmd == "setup")      then setup args else return ()
-
+    if (subCmd == "--version")  then printVersion args else return ()
+    if (subCmd == "document")   then document args else return ()
+    if (subCmd == "install")    then install args else return ()
+    if (subCmd == "list")       then list args else return ()
+    if (subCmd == "graph")      then graph args else return ()
+    if (subCmd == "foreach")    then forEach args else return ()
+    if (subCmd == "setup")      then setup args else return ()
+                                                               
 usage :: Sh ()
 usage = do
     echo $ "usage: music-util <command> [<args>]"
@@ -179,6 +180,10 @@ usage = do
     echo $ "                        --no-reference      Skip creating the reference documentation"
     echo $ "                        --local             Skip uploading"
     echo ""
+
+printVersion :: [String] -> Sh ()
+printVersion _ = do
+    echo $ "music-util, version 0.9"
 
 setup :: [String] -> Sh ()
 setup ("clone":_)   = setupClone (return ())
