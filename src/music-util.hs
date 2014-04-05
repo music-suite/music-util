@@ -42,6 +42,9 @@ getEnvOr n def = fmap (either (const def) id) $ (try (E.getEnv n) :: IO (Either 
 packages :: [String]
 packages = labels dependencies
 
+realPackages :: [String]
+realPackages = packages `sans` "music-util" `sans` "music-docs"
+
 dependencies :: Gr String String
 dependencies = mkGraph
     [
@@ -210,7 +213,7 @@ setupSandbox' = do
     -- Tell cabal to use the sandbox in all music-suite packages.
     -- This is typically only needed for top-level packages such as music-preludes, but no
     -- harm in doing it in all packages.
-    forM_ (packages `sans` "music-util" `sans` "music-docs") $ \p -> chdir (fromString p) $ do
+    forM_ realPackages $ \p -> chdir (fromString p) $ do
         run "cabal" ["sandbox", "init", "--sandbox", "../music-sandbox"]
         run "cabal" ["install", "--only-dependencies"]
         run "cabal" ["configure"]
@@ -377,19 +380,28 @@ makeApiDocs = do
 
 makeApiDocs :: Sh ()
 makeApiDocs = do
-
-    hsFiles <- getHsFiles
-    liftIO $ mapM_ print $ hsFiles
-
     mkdir_p "musicsuite.github.io/docs/api/src"
 
-    let opts  = ["-h"::Text, "--odir=musicsuite.github.io/docs/api"]
-    -- let opts1 = "--source-module=src/%{MODULE/./-}.html --source-entity=src/%{MODULE/./-}.html#%{NAME}"
-    let opts1 = []
-    let opts2 = ["--title=The\xA0Music\xA0Suite"] -- Must use nbsp
+    path <- liftIO $ getEnvOr "MUSIC_SUITE_DIR" ""
 
-    run "haddock" (concat [opts, opts1, opts2, fmap unFilePath hsFiles])
+    -- TODO generate this
+    let packDb = ["--package-db"::Text, fromString path <> "/music-sandbox/x86_64-osx-ghc-7.6.3-packages.conf.d"]
+    let out    = ["-o", fromString path <> "/musicsuite.github.io/docs/api"]
+    run "standalone-haddock" $ concat [packDb, out, fmap fromString realPackages]
     return ()
+
+    -- hsFiles <- getHsFiles
+    -- liftIO $ mapM_ print $ hsFiles
+    -- 
+    -- mkdir_p "musicsuite.github.io/docs/api/src"
+    -- 
+    -- let opts  = ["-h"::Text, "--odir=musicsuite.github.io/docs/api"]
+    -- -- let opts1 = "--source-module=src/%{MODULE/./-}.html --source-entity=src/%{MODULE/./-}.html#%{NAME}"
+    -- let opts1 = []
+    -- let opts2 = ["--title=The\xA0Music\xA0Suite"] -- Must use nbsp
+    -- 
+    -- run "haddock" (concat [opts, opts1, opts2, fmap unFilePath hsFiles])
+    -- return ()
 
 makeRef :: Sh ()
 makeRef = do
