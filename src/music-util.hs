@@ -152,16 +152,18 @@ main2 = do
     chdir (fromString path) (main3 args)
 
 main3 []              = usage
-main3 (subCmd : args) = do
-    if length (subCmd : args) <= 0 then usage else do
-    if (subCmd == "--version")  then printVersion args else return ()
-    if (subCmd == "document")   then document args else return ()
-    if (subCmd == "install")    then install args else return ()
-    if (subCmd == "list")       then list args else return ()
-    if (subCmd == "graph")      then graph args else return ()
-    if (subCmd == "foreach")    then forEach args else return ()
-    if (subCmd == "setup")      then setup args else return ()
-                                                               
+main3 (subCmd : args) =
+    if length (subCmd : args) <= 0 
+      then usage 
+      else case subCmd of        
+        "--version" -> printVersion args
+        "document"  -> document args
+        "install"   -> install args
+        "list"      -> list args
+        "graph"     -> graph args
+        "foreach"   -> forEach args
+        "setup"     -> setup args
+                                                                 
 usage :: Sh ()
 usage = do
     echo $ "usage: music-util <command> [<args>]"
