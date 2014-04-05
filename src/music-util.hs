@@ -31,6 +31,7 @@ import           Distribution.Verbosity                (silent)
 import           Shelly
 import qualified System.Environment                    as E
 default (T.Text)
+
 main = shelly $ verbosely $ main2
 
 show' :: (Show a, IsString b) => a -> b
@@ -163,12 +164,14 @@ main3 (subCmd : args) =
         "graph"     -> graph args
         "foreach"   -> forEach args
         "setup"     -> setup args
+        "help"      -> usage
+        _           -> echo "Unknown command, try music-util help"
                                                                  
 usage :: Sh ()
 usage = do
     echo $ "usage: music-util <command> [<args>]"
     echo $ ""
-    echo $ "When commands is one of:"
+    echo $ "Where commands is one of:"
     echo $ "   list               Show a list all packages in the Music Suite"
     echo $ "   graph              Show a graph all packages in the Music Suite (requires Graphviz)"
     echo $ "   setup              Download all packages and setup sandbox"
@@ -181,7 +184,7 @@ usage = do
     echo $ "                        --no-api            Skip creating the API documentation"
     echo $ "                        --no-reference      Skip creating the reference documentation"
     echo $ "                        --local             Skip uploading"
-    echo ""
+    echo $""
 
 printVersion :: [String] -> Sh ()
 printVersion _ = do
@@ -194,7 +197,7 @@ setup _             = setupClone setupSandbox
 
 setupClone cont = do
     path <- pwd
-    echo $ "Ready to setup music-suite in path\n    " <> unFilePath path
+    echo $ "Ready to setup music-suite sources in path\n    " <> unFilePath path
     echo $ ""
     echo $ "Please enter 'ok' to confirm..."
     conf <- liftIO $ getLine
@@ -236,9 +239,9 @@ hasCabalSandboxes = do
 
 clonePackage :: String -> Sh ()
 clonePackage name = do
-    echo "======================================================================"
+    echo $ yellow $ "======================================================================"
+    echo $ yellow $ fromString name
     liftIO $ system $ "git clone git@github.com:music-suite/" <> name <> ".git"
-    echo "======================================================================"
     return ()
 
 list :: [String] -> Sh ()
@@ -261,9 +264,8 @@ forEach' :: [String] -> String -> Sh ()
 forEach' []         _    = error "foreach: empty command list"
 forEach' (cmd:args) name = do
     -- TODO check dir exists, otherwise return and warn
-    echo "======================================================================"
-    echo $ fromString name
-    echo "======================================================================"
+    echo $ yellow $ "======================================================================"
+    echo $ yellow $ fromString name
     chdir (fromString name) $ do
         run_ (fromString $ substName $ cmd) (fmap (fromString . substName) args)
     where
@@ -274,10 +276,9 @@ install (name:_) = do
     let all = List.nub $ reverse $ getPackageDeps name
     -- echo $ show' $ all
 
-    echo "======================================================================"
-    echo "Reinstalling the following packages:"
+    echo $ yellow $ "======================================================================"
+    echo $ yellow $ "Reinstalling the following packages:"
     mapM (\x -> echo $ "        " <> fromString x) all
-    echo "======================================================================"
 
     mapM reinstall all
     return ()
@@ -293,34 +294,26 @@ document args = do
 
     if (flagReinstall)
         then do
-            echo ""
-            echo "======================================================================"
-            echo "Reinstalling transf"
-            echo "======================================================================"
+            echo $ yellow $ "======================================================================"
+            echo $ yellow $ "Reinstalling transf"
             reinstallTransf
         else return ()
     if (not flagNoApi)
         then do
-            echo ""
-            echo "======================================================================"
-            echo "Making API documentation"
-            echo "======================================================================"
+            echo $ yellow $ "======================================================================"
+            echo $ yellow $ "Making API documentation"
             makeApiDocs
         else return ()
     if (not flagNoRef)
         then do
-            echo ""
-            echo "======================================================================"
-            echo "Making reference documentation"
-            echo "======================================================================"
+            echo $ yellow $ "======================================================================"
+            echo $ yellow $ "Making reference documentation"
             makeRef
         else return ()
     if (not flagLocal)
         then do
-            echo ""
-            echo "======================================================================"
-            echo "Uploading documentation"
-            echo "======================================================================"
+            echo $ yellow $ "======================================================================"
+            echo $ yellow $ "Uploading documentation"
             upload
         else return ()
     return ()
@@ -454,3 +447,9 @@ rep a b s@(x:xs) = if List.isPrefixOf a s
 rep _ _ [] = []
 
 xs `sans` x = filter (/= x) xs
+
+
+red    s = "\x1b[31m" <> s <> "\x1b[0m"
+green  s = "\x1b[32m" <> s <> "\x1b[0m"
+yellow s = "\x1b[33m" <> s <> "\x1b[0m"
+
