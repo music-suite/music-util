@@ -188,7 +188,7 @@ usage = do
 
 printVersion :: [String] -> Sh ()
 printVersion _ = do
-    echo $ "music-util, version 0.9.1"
+    echo $ "music-util, version 0.9.2"
 
 setup :: [String] -> Sh ()
 setup ("clone":_)   = setupClone (return ())
