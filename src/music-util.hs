@@ -251,11 +251,17 @@ clonePackage name = do
     liftIO $ system $ "git clone git@github.com:music-suite/" <> name <> ".git"
     return ()
 
--- | TODO Hack , see <https://mappend.net/posts/ghc-and-cabal-sandbox-playing-ni>
 packagePath :: [String] -> Sh ()
-packagePath _ = liftIO $ do
+packagePath _ = liftIO $ getPackagePath >>= putStr
+
+-- | TODO Hack , see <https://mappend.net/posts/ghc-and-cabal-sandbox-playing-ni>
+getPackagePath :: IO String
+getPackagePath = do
     (_, out, _, _) <- runInteractiveCommand $ "cd $MUSIC_SUITE_DIR/music-preludes; cabal sandbox hc-pkg list | grep \\: |  awk '{print NR,$0}' | sort -nr | sed 's/^[0-9]* //' | sed 's/://' | paste -d: - -"
-    hGetContents out >>= (putStr . replace "\n" "")
+    fmap (replace "\n" "") $ hGetContents out
+
+getPrimaryPackagePath :: IO String
+getPrimaryPackagePath = fmap (takeWhile (/= ':')) getPackagePath
 
 list :: [String] -> Sh ()
 list _ = mapM_ (echo . fromString) packages
@@ -396,9 +402,11 @@ makeApiDocs = do
     mkdir_p "musicsuite.github.io/docs/api/src"
 
     path <- liftIO $ getEnvOr "MUSIC_SUITE_DIR" ""
-
+    -- let packDbPath = fromString path <> "/music-sandbox/x86_64-osx-ghc-7.6.3-packages.conf.d"
+    packDbPath <- liftIO (fmap fromString getPrimaryPackagePath)
+    
     -- TODO generate this
-    let packDb = ["--package-db"::Text, fromString path <> "/music-sandbox/x86_64-osx-ghc-7.6.3-packages.conf.d"]
+    let packDb = ["--package-db"::Text, packDbPath]
     let out    = ["-o", fromString path <> "/musicsuite.github.io/docs/api"]
     run "standalone-haddock" $ concat [packDb, out, fmap fromString realPackages]
     return ()
