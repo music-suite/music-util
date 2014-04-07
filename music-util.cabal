@@ -25,6 +25,7 @@ executable "music-util"
         containers,
         shelly,
         process,
+        split,
 
         -- If enabled, add HAS_GRAPHVIZ flag
         -- graphviz,

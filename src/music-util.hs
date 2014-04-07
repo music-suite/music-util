@@ -16,6 +16,7 @@ import Data.GraphViz.Attributes.Complete
 import System.Process (system, runInteractiveCommand)
 import Control.Monad
 import qualified Data.List                             as List
+import           Data.List.Split
 import           Data.Map                              (Map)
 import qualified Data.Map                              as Map
 import           Data.Maybe
@@ -254,7 +255,7 @@ clonePackage name = do
 packagePath :: [String] -> Sh ()
 packagePath _ = liftIO $ do
     (_, out, _, _) <- runInteractiveCommand $ "cd $MUSIC_SUITE_DIR/music-preludes; cabal sandbox hc-pkg list | grep \\: |  awk '{print NR,$0}' | sort -nr | sed 's/^[0-9]* //' | sed 's/://' | paste -d: - -"
-    hGetContents out >>= putStr
+    hGetContents out >>= (putStr . replace "\n" "")
 
 list :: [String] -> Sh ()
 list _ = mapM_ (echo . fromString) packages
@@ -464,4 +465,7 @@ xs `sans` x = filter (/= x) xs
 red    s = "\x1b[31m" <> s <> "\x1b[0m"
 green  s = "\x1b[32m" <> s <> "\x1b[0m"
 yellow s = "\x1b[33m" <> s <> "\x1b[0m"
+
+replace :: Eq a => [a] -> [a] -> [a] -> [a]
+replace old new = List.intercalate new . splitOn old
 
