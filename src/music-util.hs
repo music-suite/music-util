@@ -13,7 +13,7 @@ import Data.GraphViz
 import Data.GraphViz.Attributes.Complete
 #endif
 
-import System.Process (system)
+import System.Process (system, runInteractiveCommand)
 import Control.Monad
 import qualified Data.List                             as List
 import           Data.Map                              (Map)
@@ -30,6 +30,9 @@ import           Distribution.PackageDescription.Parse (readPackageDescription)
 import           Distribution.Verbosity                (silent)
 import           Shelly
 import qualified System.Environment                    as E
+import Data.Version (showVersion)
+import qualified Paths_music_util                      as Paths
+import System.IO (hGetContents)
 default (T.Text)
 
 main = shelly $ verbosely $ main2
@@ -164,6 +167,7 @@ main3 (subCmd : args) =
         "graph"     -> graph args
         "foreach"   -> forEach args
         "setup"     -> setup args
+        "package-path" -> packagePath args
         "help"      -> usage
         _           -> echo "Unknown command, try music-util help"
                                                                  
@@ -179,6 +183,7 @@ usage = do
     echo $ "   setup sandbox      Setup the sandbox"
     echo $ "   install <package>  Reinstall the given package and its dependencies"
     echo $ "   foreach <command>  Run a command in each source directory"
+    echo $ "   package-path       Print a suitable GHC_PACKAGE_PATH value for use with runhaskell etc"
     echo $ "   document           Generate and upload documentation"
     echo $ "                        --reinstall-transf  Reinstall the transf package"
     echo $ "                        --no-api            Skip creating the API documentation"
@@ -188,7 +193,8 @@ usage = do
 
 printVersion :: [String] -> Sh ()
 printVersion _ = do
-    echo $ "music-util, version 0.9.2"
+    prg <- liftIO $ E.getProgName
+    echo $ fromString prg <> ", version " <> fromString (showVersion Paths.version)
 
 setup :: [String] -> Sh ()
 setup ("clone":_)   = setupClone (return ())
@@ -243,6 +249,12 @@ clonePackage name = do
     echo $ yellow $ fromString name
     liftIO $ system $ "git clone git@github.com:music-suite/" <> name <> ".git"
     return ()
+
+-- | TODO Hack , see <https://mappend.net/posts/ghc-and-cabal-sandbox-playing-ni>
+packagePath :: [String] -> Sh ()
+packagePath _ = liftIO $ do
+    (_, out, _, _) <- runInteractiveCommand $ "cd $MUSIC_SUITE_DIR/music-preludes; cabal sandbox hc-pkg list | grep \\: |  awk '{print NR,$0}' | sort -nr | sed 's/^[0-9]* //' | sed 's/://' | paste -d: - -"
+    hGetContents out >>= putStr
 
 list :: [String] -> Sh ()
 list _ = mapM_ (echo . fromString) packages
