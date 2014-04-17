@@ -44,6 +44,9 @@ show' = fromString . show
 getEnvOr :: String -> String -> IO String
 getEnvOr n def = fmap (either (const def) id) $ (try (E.getEnv n) :: IO (Either SomeException String))
 
+replPackage :: String
+replPackage = "music-preludes"
+
 packages :: [String]
 packages = labels dependencies
 
@@ -162,6 +165,7 @@ main3 (subCmd : args) =
       then usage 
       else case subCmd of        
         "--version" -> printVersion args
+        "repl"      -> repl args
         "document"  -> document args
         "install"   -> install args
         "list"      -> list args
@@ -176,13 +180,13 @@ usage :: Sh ()
 usage = do
     echo $ "usage: music-util <command> [<args>]"
     echo $ ""
-    echo $ "Where commands is one of:"
+    echo $ "Commands:"
+    echo $ "   repl               Start a GHCI session with the development version of the suite"
     echo $ "   list               Show a list all packages in the Music Suite"
     echo $ "   graph              Show a graph all packages in the Music Suite (requires Graphviz)"
     echo $ "   setup              Download all packages and setup sandbox"
-    echo $ "   setup clone        Download all packages"
-    echo $ "   setup sandbox      Setup the sandbox"
-    echo $ "   install <package>  Reinstall the given package and its dependencies"
+    echo $ "   setup clone          Download all packages"
+    echo $ "   setup sandbox        Setup the sandbox"
     echo $ "   foreach <command>  Run a command in each source directory"
     echo $ "   package-path       Print a suitable GHC_PACKAGE_PATH value for use with runhaskell etc"
     echo $ "   document           Generate and upload documentation"
@@ -190,12 +194,20 @@ usage = do
     echo $ "                        --no-api            Skip creating the API documentation"
     echo $ "                        --no-reference      Skip creating the reference documentation"
     echo $ "                        --local             Skip uploading"
-    echo $""
+    echo $ ""
+    echo $ "Deprecated commands:"
+    echo $ "   install <package>  Reinstall the given package and its dependencies"
 
 printVersion :: [String] -> Sh ()
 printVersion _ = do
     prg <- liftIO $ E.getProgName
     echo $ fromString prg <> ", version " <> fromString (showVersion Paths.version)
+
+repl :: [String] -> Sh ()
+repl _ = do
+  path <- pwd
+  liftIO (system $ "pushd " ++ unFilePath path ++ "/" ++ replPackage ++ " && cabal repl && popd")
+  return ()
 
 setup :: [String] -> Sh ()
 setup ("clone":_)   = setupClone (return ())
