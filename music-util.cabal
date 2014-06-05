@@ -1,6 +1,6 @@
 
 name:               music-util
-version:            0.10
+version:            0.11
 cabal-version:      >= 1.10
 author:             Hans Hoglund
 maintainer:         Hans Hoglund <hans@hanshoglund.se>

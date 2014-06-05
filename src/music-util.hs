@@ -69,9 +69,11 @@ dependencies = mkGraph
         (10, "music-preludes")            ,
         (11, "music-graphics")            ,
         (12, "music-sibelius")            ,
+        (90, "music-suite")               ,
         (99, "music-docs")
     ]
     [
+        -- First value depends on second value
         (0, -3, ""),
         (0, -4, ""),
         (1, -3, ""),
@@ -94,7 +96,19 @@ dependencies = mkGraph
         (10, 9, ""),
 
         (11, 10, ""),
-        (12, 10, "") 
+        (12, 10, ""),
+
+        (90, -3, ""),
+        (90, -4, ""),
+        (90, 0, ""),
+        (90, 1, ""),
+        (90, 2, ""),
+        (90, 5, ""),
+        (90, 6, ""),
+        (90, 7, ""),
+        (90, 8, ""),
+        (90, 9, ""),
+        (90, 10, "")
     ]
 
 
