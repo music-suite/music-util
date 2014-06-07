@@ -249,7 +249,9 @@ setupSandbox' = do
     rm_rf "music-sandbox"
     mkdir "music-sandbox"
     chdir "music-sandbox" $ do
+        -- Create the sandbox
         run "cabal" ["sandbox", "init", "--sandbox", "."]
+        -- Add all music-suite repos as sources to the sandbox 
         forM_ packages $ \p -> do
             run "cabal" ["sandbox", "add-source", "../" <> T.pack p]
 
@@ -260,7 +262,7 @@ setupSandbox' = do
         run "cabal" ["sandbox", "init", "--sandbox", "../music-sandbox"]
         run "cabal" ["install", "--only-dependencies"]
         run "cabal" ["configure"]
-        run "cabal" ["install"]
+        -- run "cabal" ["install"]
 
     return ()
 
