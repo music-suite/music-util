@@ -434,9 +434,10 @@ makeApiDocs = do
     packDbPath <- liftIO (fmap fromString getPrimaryPackagePath)
     
     -- TODO generate this
+    let hyperl = ["--hyperlink-source"]
     let packDb = ["--package-db"::Text, packDbPath]
     let out    = ["-o", fromString path <> "/musicsuite.github.io/docs/api"]
-    run "standalone-haddock" $ concat [packDb, out, fmap fromString realPackages]
+    run "standalone-haddock" $ concat [hyperl, packDb, out, fmap fromString realPackages]
     return ()
 
     -- hsFiles <- getHsFiles
