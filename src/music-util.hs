@@ -266,11 +266,13 @@ setupSandbox' = do
 
     return ()
 
+-- TODO remove this check when nobody uses 1.17 or lower any more...
 hasCabalSandboxes :: Sh Bool
 hasCabalSandboxes = do
     cb <- run (fromString "cabal") [fromString "--version"]
-    return $ List.isInfixOf "1.18" . head . lines. T.unpack $ cb
-
+    return $ any (\v -> isCabalVersion v cb) ["1.18", "1.19", "1.20", "1.21"]
+    where
+      isCabalVersion x = List.isInfixOf x . head . lines. T.unpack
 
 clonePackage :: String -> Sh ()
 clonePackage name = do
