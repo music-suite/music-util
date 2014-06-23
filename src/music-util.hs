@@ -13,7 +13,7 @@ import Data.GraphViz
 import Data.GraphViz.Attributes.Complete
 #endif
 
-import System.Process (system, runInteractiveCommand)
+import System.Process (system, rawSystem, runInteractiveCommand)
 import Control.Monad
 import qualified Data.List                             as List
 import           Data.List.Split
@@ -185,6 +185,8 @@ main3 (subCmd : args) =
         "list"      -> list args
         "graph"     -> graph args
         "foreach"   -> forEach args
+        "grep"      -> grep args
+        "test"      -> test args
         "setup"     -> setup args
         "package-path" -> packagePath args
         "help"      -> usage
@@ -201,6 +203,8 @@ usage = do
     echo $ "   setup              Download all packages and setup sandbox"
     echo $ "   setup clone          Download all packages"
     echo $ "   setup sandbox        Setup the sandbox"
+    echo $ "   grep <expr> [opts] Search in the Music Suite source code"
+    echo $ "   test [opts]        Run unit tests"
     echo $ "   foreach <command>  Run a command in each source directory"
     echo $ "   package-path       Print a suitable GHC_PACKAGE_PATH value for use with runhaskell etc"
     echo $ "   document           Generate and upload documentation"
@@ -303,6 +307,18 @@ graph _ = do
 #else
     fail "music-util compiled without Graphviz support"
 #endif
+
+grep :: [String] -> Sh ()
+grep opts = flip mapM_ packages $ \name ->
+  errExit False $ run_ "grep" $ ["--color=always","-R","-e"] ++ fmap fromString opts ++ [fromString name <> "/src"]
+
+test :: [String] -> Sh ()
+test args =
+  let packagesWithTests = ["music-preludes"] in -- TODO
+  flip mapM_ packagesWithTests $ \name -> do
+    chdir (fromString name) $ do
+      run_ "runhaskell" $ ["tests/tests.hs"] ++ fmap fromString args
+  
 
 forEach :: [String] -> Sh ()
 forEach cmdArgs = do
