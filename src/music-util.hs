@@ -214,6 +214,8 @@ usage = do
     echo $ "   grep <expr> [opts] Search in the Music Suite source code"
     echo $ "   test [opts]        Run unit tests"
     echo $ "   foreach <command>  Run a command in each source directory"
+    echo $ "                        In <command> you can use MUSIC_PACKAGE in place of the"
+    echo $ "                        name of the current package."
     echo $ "   package-path       Print a suitable GHC_PACKAGE_PATH value for use with runhaskell etc"
     echo $ "   document           Generate and upload documentation"
     echo $ "                        --no-api            Skip creating the API documentation"
