@@ -51,7 +51,13 @@ packages :: [String]
 packages = labels dependencies
 
 realPackages :: [String]
-realPackages = packages `sans` "music-util" `sans` "music-docs"
+realPackages = packages
+  `sans` "music-util"
+  `sans` "music-docs"
+
+packagesToDocument :: [String]
+packagesToDocument = realPackages 
+  `sans` "music-suite" -- Haddock doesn't like packges with no moduless
 
 dependencies :: Gr String String
 dependencies = mkGraph
@@ -448,7 +454,7 @@ makeApiDocs = do
     let hyperl = ["--hyperlink-source"]
     let packDb = ["--package-db"::Text, packDbPath]
     let out    = ["-o", fromString path <> "/musicsuite.github.io/docs/api"]
-    run "standalone-haddock" $ concat [hyperl, packDb, out, fmap fromString realPackages]
+    run "standalone-haddock" $ concat [hyperl, packDb, out, fmap fromString packagesToDocument]
     return ()
 
     -- hsFiles <- getHsFiles
