@@ -208,7 +208,6 @@ usage = do
     echo $ "   foreach <command>  Run a command in each source directory"
     echo $ "   package-path       Print a suitable GHC_PACKAGE_PATH value for use with runhaskell etc"
     echo $ "   document           Generate and upload documentation"
-    echo $ "                        --reinstall-transf  Reinstall the transf package"
     echo $ "                        --no-api            Skip creating the API documentation"
     echo $ "                        --no-reference      Skip creating the reference documentation"
     echo $ "                        --local             Skip uploading"
@@ -351,18 +350,10 @@ install (name:_) = do
 
 document :: [String] -> Sh ()
 document args = do
-
-    let flagReinstall   = "--reinstall-transf" `elem` args
     let flagNoApi       = "--no-api" `elem` args
     let flagNoRef       = "--no-reference" `elem` args
     let flagLocal       = "--local" `elem` args
 
-    if (flagReinstall)
-        then do
-            echo $ yellow $ "======================================================================"
-            echo $ yellow $ "Reinstalling transf"
-            reinstallTransf
-        else return ()
     if (not flagNoApi)
         then do
             echo $ yellow $ "======================================================================"
@@ -383,14 +374,6 @@ document args = do
         else return ()
     return ()
 
-
-reinstallTransf :: Sh ()
-reinstallTransf = do
-    -- TODO check dir exists, otherwise return and warn
-    chdir "transf" $ do
-        run_ "cabal" ["clean"]
-        run_ "cabal" ["configure"]
-        run_ "cabal" ["install"]
 
 reinstall :: String -> Sh ()
 reinstall name = do
