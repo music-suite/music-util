@@ -211,25 +211,28 @@ usage = do
     echo $ "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
     echo $ ""
     echo $ "Commands:"
-    echo $ "   repl               Start a GHCI session with the development version of the suite"
-    echo $ "   list               Show a list all packages in the Music Suite"
-    echo $ "   graph              Show a graph all packages in the Music Suite (requires Graphviz)"
-    echo $ "   setup              Download all packages and setup sandbox"
-    echo $ "   setup clone          Download all packages"
-    echo $ "   setup sandbox        Setup the sandbox"
-    echo $ "   grep <expr> [opts] Search in the Music Suite source code"
-    echo $ "   test [opts]        Run unit tests"
-    echo $ "   foreach <command>  Run a command in each source directory"
-    echo $ "                        In <command> you can use MUSIC_PACKAGE in place of the"
-    echo $ "                        name of the current package, i.e `foreach echo MUSIC_PACKAGE`"
-    echo $ "   package-path       Print a suitable GHC_PACKAGE_PATH value for use with runhaskell etc"
-    echo $ "   document           Generate and upload documentation"
-    echo $ "                        --no-api            Skip creating the API documentation"
-    echo $ "                        --no-reference      Skip creating the reference documentation"
-    echo $ "                        --local             Skip uploading"
+    echo $ "    repl               Start a GHCI session with the development version of the suite"
+    echo $ "    list               Show a list all packages in the Music Suite"
+    echo $ "    graph              Show a graph all packages in the Music Suite (requires Graphviz)"
+    echo $ "    setup              Download all packages and setup sandbox"
+    echo $ "    setup clone        Download all packages"
+    echo $ "    setup sandbox      Setup the sandbox"
+    echo $ "    grep <expr> [opts] Search in the Music Suite source code"
+    echo $ "    test [opts]        Run unit tests"
+    echo $ "    foreach <command>  Run a command in each source directory"
+    echo $ "                       In <command> you can use MUSIC_PACKAGE in place of the"
+    echo $ "                       name of the current package, i.e `foreach echo MUSIC_PACKAGE`"
+    echo $ "    package-path       Print a suitable GHC_PACKAGE_PATH value for use with runhaskell etc"
+    echo $ "    document           Generate and upload documentation"
+    echo $ "                           --no-api       Skip creating the API documentation"
+    echo $ "                           --no-reference Skip creating the reference documentation"
+    echo $ "                           --upload       Upload to server"
     echo $ ""
     echo $ "Deprecated commands:"
-    echo $ "   install <package>  Reinstall the given package and its dependencies"
+    echo $ "    install <package>  Reinstall the given package and its dependencies"
+    echo $ ""
+    echo $ "Deprecated flags:"
+    echo $ "    document             --local             (does nothing)"
 
 printVersion :: [String] -> Sh ()
 printVersion _ = do
@@ -368,7 +371,7 @@ document :: [String] -> Sh ()
 document args = do
     let flagNoApi       = "--no-api" `elem` args
     let flagNoRef       = "--no-reference" `elem` args
-    let flagLocal       = "--local" `elem` args
+    let flagUpload      = "--upload" `elem` args
 
     if (not flagNoApi)
         then do
@@ -382,7 +385,7 @@ document args = do
             echo $ yellow $ "Making reference documentation"
             makeRef
         else return ()
-    if (not flagLocal)
+    if (flagUpload)
         then do
             echo $ yellow $ "======================================================================"
             echo $ yellow $ "Uploading documentation"
