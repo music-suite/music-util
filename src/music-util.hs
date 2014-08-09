@@ -30,10 +30,18 @@ import qualified Distribution.PackageDescription       as PackageDescription
 import           Distribution.PackageDescription.Parse (readPackageDescription)
 import           Distribution.Verbosity                (silent)
 import           Shelly
+import qualified System.Exit
+import qualified System.Directory
 import qualified System.Environment                    as E
 import Data.Version (showVersion)
+#ifndef NOPATH
 import qualified Paths_music_util                      as Paths
+#endif
 import System.IO (hGetContents)
+#ifndef mingw32_HOST_OS
+import qualified System.Posix.Env   as PE
+#endif
+
 default (T.Text)
 
 main = shelly $ verbosely $ main2
@@ -47,9 +55,11 @@ getEnvOr n def = fmap (either (const def) id) $ (try (E.getEnv n) :: IO (Either 
 replPackage :: String
 replPackage = "music-preludes"
 
+-- Names of all packages
 packages :: [String]
 packages = labels dependencies
 
+-- Names of all real packages (i.e. actual Music Suite libraries)
 realPackages :: [String]
 realPackages = packages
   `sans` "music-util"
@@ -118,6 +128,23 @@ dependencies = mkGraph
     ]
 
 
+firstTrue :: [Maybe a] -> Maybe a
+firstTrue = join . listToMaybe . List.dropWhile isNothing
+
+findPackageFromStart :: String -> Maybe String
+findPackageFromStart x = firstTrue $ fmap ($ x) preds
+  where
+    -- reverse to get the "important" packages first
+    preds = fmap makePred (reverse packages)
+    
+    makePred package name =
+      if name `List.isPrefixOf` package || name `List.isPrefixOf` dropMusic package
+      then Just package else Nothing
+    
+    dropMusic xs
+      | "music-" `List.isInfixOf` xs = drop (length ("music-"::String)) xs
+      | otherwise = xs
+
 #ifdef HAS_GRAPHVIZ
 
 dependencyParams :: GraphvizParams Int String String () String
@@ -177,10 +204,10 @@ main2 = do
     -- TODO check path
 
     -- echo $ fromString path
-    chdir (fromString path) (main3 args)
+    chdir (fromString path) (main3 path args)
 
-main3 []              = usage
-main3 (subCmd : args) =
+main3 _    []              = usage
+main3 path (subCmd : args) =
     if length (subCmd : args) <= 0 
       then usage 
       else case subCmd of        
@@ -191,6 +218,8 @@ main3 (subCmd : args) =
         "list"      -> list args
         "graph"     -> graph args
         "foreach"   -> forEach args
+        "push"      -> push path args
+        "pop"       -> pop args
         "grep"      -> grep args
         "test"      -> test args
         "setup"     -> setup args
@@ -219,6 +248,8 @@ usage = do
     echo $ "  foreach <command>       Run a command in each source directory"
     echo $ "                          In <command> you can use MUSIC_PACKAGE in place of the"
     echo $ "                          name of the current package, i.e `foreach echo MUSIC_PACKAGE`"
+    echo $ "  push <prefix>           Jump to the directory of the package starting with <prefix>"
+    echo $ "  pop <prefix>            Undo push"
     echo $ ""
     echo $ "  setup                   Download all packages and setup sandbox"
     echo $ "  setup clone             Download all packages"
@@ -239,7 +270,13 @@ usage = do
 printVersion :: [String] -> Sh ()
 printVersion _ = do
     prg <- liftIO $ E.getProgName
-    echo $ fromString prg <> ", version " <> fromString (showVersion Paths.version)
+    echo $ fromString prg <> ", version " <> fromString vs 
+    where
+#ifdef NOPATH
+      vs = "(unknown version)"
+#else
+      vs = (showVersion Paths.version)
+#endif
 
 repl :: [String] -> Sh ()
 repl _ = do
@@ -327,6 +364,24 @@ graph _ = do
 #else
     fail "music-util compiled without Graphviz support"
 #endif
+
+
+push :: String -> [String] -> Sh ()
+push root [name] = case findPackageFromStart name of
+  Just path -> do
+    -- liftIO $ void $ System.Directory.setCurrentDirectory (root <> "/" <> fromString path)
+    echo $ fromString root <> "/" <> fromString path
+    cd (fromString path)
+    liftIO $ void $ System.Exit.exitSuccess
+    -- run_ "pwd" []
+  Nothing -> 
+    return ()
+push _ _    = error "Command 'push' needs one parameter"
+
+pop :: [String] -> Sh ()
+pop = error "Not implemented"
+-- pop [name] = run_ "popd" []
+-- pop _      = error "Command 'pop' needs one parameter"
 
 grep :: [String] -> Sh ()
 grep opts = flip mapM_ packages $ \name ->
@@ -528,3 +583,24 @@ yellow s = "\x1b[33m" <> s <> "\x1b[0m"
 replace :: Eq a => [a] -> [a] -> [a] -> [a]
 replace old new = List.intercalate new . splitOn old
 
+
+
+-- | Temporarily modfiy an environment variable (POSIX only).
+--
+-- @
+-- withEnv varName (\oldValueIfPresent -> newValue) $ do
+--    ...
+-- @
+--
+withEnv :: String -> (Maybe String -> String) -> IO a -> IO a
+#ifdef mingw32_HOST_OS
+withEnv _ _ = id
+#else
+withEnv n f k = do
+  x <- PE.getEnv n
+  PE.setEnv n (f x) True
+  res <- k
+  case x of
+    Nothing -> PE.unsetEnv n >> return res
+    Just x2 -> PE.setEnv n x2 True >> return res    
+#endif
