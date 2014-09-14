@@ -32,7 +32,11 @@ executable "music-util"
         
         fgl,
         directory,
-        Cabal           >= 1.16 && < 2
+        Cabal           >= 1.16 && < 2,
+
+        -- Not needed by the code, but install it anyway
+        standalone-haddock
+        
     if !os(windows)
       build-depends:    unix
     hs-source-dirs:     src
