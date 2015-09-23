@@ -1,5 +1,5 @@
 
-{-# LANGUAGE OverloadedStrings, ViewPatterns, CPP, NoMonomorphismRestriction #-}
+{-# LANGUAGE OverloadedStrings, ViewPatterns, CPP, NoMonomorphismRestriction, FlexibleContexts #-}
 
 import           Control.Applicative
 import           Control.Exception                     (SomeException, try)
@@ -83,6 +83,7 @@ dependencies = mkGraph
         (8,  "music-articulation")        ,
         (9,  "music-parts")               ,
         (10, "music-preludes")            ,
+        (11, "music-graphics")            ,
         (12, "music-sibelius")            ,
         (90, "music-suite")               ,
         (99, "music-docs")
@@ -257,9 +258,7 @@ usage = do
     echo $ ""
     echo $ "  document                Generate and upload documentation"
     echo $ "    --no-api              Skip creating the API documentation"
-    echo $ "    --no-guide            Skip creating the user manual"
-    echo $ "    --just-api            Skip creating the API documentation"
-    echo $ "    --just-guide          Skip creating the user manual"
+    echo $ "    --no-reference        Skip creating the reference documentation"
     echo $ "    --upload              Upload to server"
     echo $ ""
     echo $ red "DEPRECATED COMMANDS:"
@@ -267,7 +266,6 @@ usage = do
     echo $ ""
     echo $ red "DEPRECATED FLAGS:"
     echo $ "  document --local"
-    echo $ "  document --no-reference (same as no-guide)"
 
 printVersion :: [String] -> Sh ()
 printVersion _ = do
@@ -331,11 +329,7 @@ setupSandbox' = do
 
 -- TODO remove this check when nobody uses 1.17 or lower any more...
 hasCabalSandboxes :: Sh Bool
-hasCabalSandboxes = do
-    cb <- run (fromString "cabal") [fromString "--version"]
-    return $ any (\v -> isCabalVersion v cb) ["1.18", "1.19", "1.20", "1.21"]
-    where
-      isCabalVersion x = List.isInfixOf x . head . lines. T.unpack
+hasCabalSandboxes = return True
 
 clonePackage :: String -> Sh ()
 clonePackage name = do
@@ -428,8 +422,8 @@ install (name:_) = do
 
 document :: [String] -> Sh ()
 document args = do
-    let flagNoApi       = "--no-api" `elem` args || "--just-guide" `elem` args
-    let flagNoRef       = "--no-reference" `elem` args || "--no-guide" `elem` args || "--just-api" `elem` args
+    let flagNoApi       = "--no-api" `elem` args
+    let flagNoRef       = "--no-reference" `elem` args
     let flagUpload      = "--upload" `elem` args
 
     if (not flagNoApi)
